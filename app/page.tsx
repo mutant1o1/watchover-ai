@@ -1,10 +1,15 @@
-import React from 'react'
+"use client"
+import React, { useRef } from 'react'
+import Webcam from 'react-webcam';
 
 type Props = {}
 
 const HomePage = (props: Props) => {
+  const webcamRef = useRef<Webcam>(null);
   return (
-    <div>Hello World</div>
+    <div>
+      <Webcam />
+    </div>
   )
 }
 
