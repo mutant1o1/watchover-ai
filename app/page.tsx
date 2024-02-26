@@ -20,13 +20,14 @@ import {
     Volume2,
 } from "lucide-react";
 import { Be_Vietnam_Pro } from "next/font/google";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Rings } from "react-loader-spinner";
 import Webcam from "react-webcam";
 import { toast } from "sonner";
 import * as cocossd from "@tensorflow-models/coco-ssd";
 import "@tensorflow/tfjs-backend-cpu";
 import "@tensorflow/tfjs-backend-webgl";
+import { ObjectDetection } from "@tensorflow-models/coco-ssd";
 
 type Props = {};
 
@@ -39,6 +40,28 @@ const HomePage = (props: Props) => {
     const [isRecording, setisRecording] = useState<boolean>(false);
     const [autoRecordEnabled, setautoRecordEnabled] = useState<boolean>(false);
     const [volume, setvolume] = useState(0.8);
+    const [model, setmodel] = useState<ObjectDetection>();
+    const [loading, setloading] = useState(false);
+
+    useEffect(() => {
+      setloading(true);
+      initModel();
+    }, [])
+
+
+
+    //loads model
+
+    //set it in a state variable
+
+    async function initModel() {
+      const loadedModel: ObjectDetection = await cocossd.load({
+        base: "mobilenet_v2"
+      });
+      setmodel(loadedModel);
+    }
+
+    
 
     return (
         <div className="flex h-screen">
