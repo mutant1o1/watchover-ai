@@ -32,6 +32,8 @@ import { ObjectDetection } from "@tensorflow-models/coco-ssd";
 
 type Props = {};
 
+let interval:any = null;
+
 const HomePage = (props: Props) => {
     const webcamRef = useRef<Webcam>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -67,6 +69,26 @@ const HomePage = (props: Props) => {
         setloading(false);
       }
     }, [model]);
+
+    async function runPrediction() {
+      if(
+        model && webcamRef.current && webcamRef.current.video && webcamRef.current.video.readyState === 4
+      ) {
+        const predictions = await model.detect(webcamRef.current.video);
+
+        console.log(predictions);
+      }
+    }
+
+    //setting up interval
+    useEffect(() => {
+      interval = setInterval(() => {
+        runPrediction();
+      }, 1000)
+
+      //to make sure that only one interval running at a time
+      return () => clearInterval(interval);
+    }, [webcamRef.current, model]);
 
     return (
         <div className="flex h-screen">
