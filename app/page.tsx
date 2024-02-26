@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { Slider } from "@/components/ui/slider";
+import { beep } from "@/utils/audio";
 import {
     Camera,
     FlipHorizontal,
@@ -105,7 +106,7 @@ const HomePage = (props: Props) => {
                         <Separator className="my-2" />
 
                         <Popover>
-                            <PopoverTrigger>
+                            <PopoverTrigger asChild>
                                 <Button variant={"outline"} size={"icon"}>
                                     <Volume2 />
                                 </Button>
@@ -122,6 +123,10 @@ const HomePage = (props: Props) => {
                         </Popover>
                         <Separator className="my-2" />
                     </div>
+                </div>
+
+                
+
                 </div>
             </div>
         </div>
