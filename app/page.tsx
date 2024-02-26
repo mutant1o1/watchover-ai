@@ -1,8 +1,18 @@
 "use client";
 import { ModeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
-import { Camera, FlipHorizontal, PersonStanding, Video } from "lucide-react";
+import { Slider } from "@/components/ui/slider";
+import {
+    Camera,
+    FlipHorizontal,
+    PersonStanding,
+    Video,
+    Volume,
+    Volume2,
+} from "lucide-react";
+import { Be_Vietnam_Pro } from "next/font/google";
 import React, { useRef, useState } from "react";
 import { Rings } from "react-loader-spinner";
 import Webcam from "react-webcam";
@@ -18,6 +28,8 @@ const HomePage = (props: Props) => {
     const [mirrored, setmirrored] = useState<boolean>(false);
     const [isRecording, setisRecording] = useState<boolean>(false);
     const [autoRecordEnabled, setautoRecordEnabled] = useState<boolean>(false);
+    const [volume, setvolume] = useState(0.8)
+    
     return (
         <div className="flex h-screen">
             {/* Left division - webcam and Canvas */}
@@ -91,6 +103,23 @@ const HomePage = (props: Props) => {
                     {/* bottom section */}
                     <div className="flex flex-col gap-2">
                         <Separator className="my-2" />
+
+                        <Popover>
+                            <PopoverTrigger>
+                                <Button variant={"outline"} size={"icon"}>
+                                    <Volume2 />
+                                </Button>
+                            </PopoverTrigger>
+
+                            <PopoverContent>
+                              <Slider max={1} min={0} step={0.2}
+                              defaultValue={[volume]}
+                              onValueCommit={(val) => {
+                                setvolume(val[0]);
+                                beep(val[0]);
+                              }}/>
+                            </PopoverContent>
+                        </Popover>
                         <Separator className="my-2" />
                     </div>
                 </div>
