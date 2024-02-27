@@ -33,7 +33,8 @@ import { drawOnCanvas } from "@/utils/draw";
 
 type Props = {};
 
-let interval:any = null;
+let interval: any = null;
+let stopTimeout: any = null;
 
 const HomePage = (props: Props) => {
     const webcamRef = useRef<Webcam>(null);
@@ -47,48 +48,100 @@ const HomePage = (props: Props) => {
     const [model, setmodel] = useState<ObjectDetection>();
     const [loading, setloading] = useState(false);
 
+    //reference of the media recorder
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+
+    //initialize the media recorder
     useEffect(() => {
-      setloading(true);
-      initModel();
-    }, [])
+        if (webcamRef && webcamRef.current) {
+            const stream = (webcamRef.current.video as any).captureStream();
+
+            if (stream) {
+                mediaRecorderRef.current = new MediaRecorder(stream);
+                mediaRecorderRef.current.ondataavailable = (e) => {
+                    if (e.data.size > 0) {
+                        const recordedBlob = new Blob([e.data], {
+                            type: "video",
+                        });
+                        const videoURL = URL.createObjectURL(recordedBlob);
+
+                        const a = document.createElement("a");
+                        a.href = videoURL;
+                        a.download = `${formatDate(new Date())}.webm`;
+                        a.click();
+                    }
+                };
+                mediaRecorderRef.current.onstart = (e) => {
+                    setisRecording(true);
+                };
+                mediaRecorderRef.current.onstop = (e) => {
+                    setisRecording(false);
+                };
+            }
+        }
+    }, [webcamRef]);
+
+    useEffect(() => {
+        setloading(true);
+        initModel();
+    }, []);
 
     //loads model
 
     //set it in a state variable
 
     async function initModel() {
-      const loadedModel: ObjectDetection = await cocossd.load({
-        base: "mobilenet_v2"
-      });
-      setmodel(loadedModel);
+        const loadedModel: ObjectDetection = await cocossd.load({
+            base: "mobilenet_v2",
+        });
+        setmodel(loadedModel);
     }
 
     useEffect(() => {
-      if(model) {
-        setloading(false);
-      }
+        if (model) {
+            setloading(false);
+        }
     }, [model]);
 
     async function runPrediction() {
-      if(
-        model && webcamRef.current && webcamRef.current.video && webcamRef.current.video.readyState === 4
-      ) {
-        const predictions: DetectedObject[] = await model.detect(webcamRef.current.video);
+        if (
+            model &&
+            webcamRef.current &&
+            webcamRef.current.video &&
+            webcamRef.current.video.readyState === 4
+        ) {
+            const predictions: DetectedObject[] = await model.detect(
+                webcamRef.current.video
+            );
 
-        resizeCanvas(canvasRef, webcamRef);
-        drawOnCanvas(mirrored, predictions, canvasRef.current?.getContext('2d'))
-      }
+            resizeCanvas(canvasRef, webcamRef);
+            drawOnCanvas(
+                mirrored,
+                predictions,
+                canvasRef.current?.getContext("2d")
+            );
+            
+            let isPerson: boolean = false;
+            if (predictions.length > 0) {
+              predictions.forEach((prediction) => {
+                isPerson = prediction.class === 'person';
+              })
+              if(isPerson && autoRecordEnabled) {
+                startRecording(true);
+              }
+            }
+        }
     }
 
     //setting up interval
     useEffect(() => {
-      interval = setInterval(() => {
-        runPrediction();
-      }, 100)
+        interval = setInterval(() => {
+            runPrediction();
+        }, 100);
 
-      //to make sure that only one interval running at a time
-      return () => clearInterval(interval);
-    }, [webcamRef.current, model, mirrored]);
+        //to make sure that only one interval running at a time
+        return () => clearInterval(interval);
+    }, [webcamRef.current, model, mirrored, autoRecordEnabled]);
 
     return (
         <div className="flex h-screen">
@@ -193,9 +246,12 @@ const HomePage = (props: Props) => {
                 </div>
             </div>
 
-            {loading && <div className="z-50 absolute w-full h-full flex items-center justify-center bg-primary-foreground">
-              Getting things ready....<Rings height={50} color="red"/>
-            </div>}
+            {loading && (
+                <div className="z-50 absolute w-full h-full flex items-center justify-center bg-primary-foreground">
+                    Getting things ready....
+                    <Rings height={50} color="red" />
+                </div>
+            )}
         </div>
     );
 
@@ -207,10 +263,38 @@ const HomePage = (props: Props) => {
     }
 
     function userPromptRecord() {
-        //check if recording
-        // then stop recording
-        //and save it to downloads
-        //if not recording then start recording
+        if (!webcamRef.current) {
+            toast("Camera is not found. Please Refresh");
+        }
+        if (mediaRecorderRef.current?.state == "recording") {
+            //check if recording
+            // then stop recording
+            //and save it to downloads
+            mediaRecorderRef.current.requestData();
+            clearTimeout(stopTimeout);
+            mediaRecorderRef.current.stop();
+            toast("Recording saved to downloads");
+        } else {
+            //if not recording then start recording
+            startRecording(false);
+        }
+    }
+
+    function startRecording(doBeep: boolean) {
+        if (
+            webcamRef.current &&
+            mediaRecorderRef.current?.state !== "recording"
+        ) {
+            mediaRecorderRef.current?.start();
+            doBeep && beep(volume);
+
+            stopTimeout = setTimeout(() => {
+                if (mediaRecorderRef.current?.state === "recording") {
+                    mediaRecorderRef.current.requestData();
+                    mediaRecorderRef.current.stop();
+                }
+            }, 30000);
+        }
     }
 
     function toggleAutoRecord() {
@@ -342,15 +426,32 @@ const HomePage = (props: Props) => {
 };
 
 export default HomePage;
-function resizeCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, webcamRef: React.RefObject<Webcam>) {
-  const canvas = canvasRef.current;
-  const video = webcamRef.current?.video;
+function resizeCanvas(
+    canvasRef: React.RefObject<HTMLCanvasElement>,
+    webcamRef: React.RefObject<Webcam>
+) {
+    const canvas = canvasRef.current;
+    const video = webcamRef.current?.video;
 
-  if((canvas && video)) {
-    const {videoWidth, videoHeight } = video;
-    canvas.width = videoWidth;
-    canvas.height = videoHeight;
-
-  }
+    if (canvas && video) {
+        const { videoWidth, videoHeight } = video;
+        canvas.width = videoWidth;
+        canvas.height = videoHeight;
+    }
 }
 
+function formatDate(d: Date) {
+    const formattedDate =
+        [
+            (d.getMonth() + 1).toString().padStart(2, "0"),
+            d.getDate().toString().padStart(2, "0"),
+            d.getFullYear(),
+        ].join("-") +
+        " " +
+        [
+            d.getHours().toString().padStart(2, "0"),
+            d.getMinutes().toString().padStart(2, "0"),
+            d.getSeconds().toString().padStart(2, "0"),
+        ].join("-");
+    return formattedDate;
+}
