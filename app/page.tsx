@@ -40,7 +40,7 @@ const HomePage = (props: Props) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     //state
-    const [mirrored, setmirrored] = useState<boolean>(false);
+    const [mirrored, setmirrored] = useState<boolean>(true);
     const [isRecording, setisRecording] = useState<boolean>(false);
     const [autoRecordEnabled, setautoRecordEnabled] = useState<boolean>(false);
     const [volume, setvolume] = useState(0.8);
@@ -53,7 +53,7 @@ const HomePage = (props: Props) => {
     }, [])
 
     //loads model
-    
+
     //set it in a state variable
 
     async function initModel() {
@@ -88,7 +88,7 @@ const HomePage = (props: Props) => {
 
       //to make sure that only one interval running at a time
       return () => clearInterval(interval);
-    }, [webcamRef.current, model]);
+    }, [webcamRef.current, model, mirrored]);
 
     return (
         <div className="flex h-screen">
