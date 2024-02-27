@@ -28,7 +28,8 @@ import { toast } from "sonner";
 import * as cocossd from "@tensorflow-models/coco-ssd";
 import "@tensorflow/tfjs-backend-cpu";
 import "@tensorflow/tfjs-backend-webgl";
-import { ObjectDetection } from "@tensorflow-models/coco-ssd";
+import { DetectedObject, ObjectDetection } from "@tensorflow-models/coco-ssd";
+import { drawOnCanvas } from "@/utils/draw";
 
 type Props = {};
 
@@ -51,10 +52,8 @@ const HomePage = (props: Props) => {
       initModel();
     }, [])
 
-
-
     //loads model
-
+    
     //set it in a state variable
 
     async function initModel() {
@@ -74,9 +73,10 @@ const HomePage = (props: Props) => {
       if(
         model && webcamRef.current && webcamRef.current.video && webcamRef.current.video.readyState === 4
       ) {
-        const predictions = await model.detect(webcamRef.current.video);
+        const predictions: DetectedObject[] = await model.detect(webcamRef.current.video);
 
-        console.log(predictions);
+        resizeCanvas(canvasRef, webcamRef);
+        drawOnCanvas(mirrored, predictions, canvasRef.current?.getContext('2d'))
       }
     }
 
@@ -84,7 +84,7 @@ const HomePage = (props: Props) => {
     useEffect(() => {
       interval = setInterval(() => {
         runPrediction();
-      }, 1000)
+      }, 100)
 
       //to make sure that only one interval running at a time
       return () => clearInterval(interval);
@@ -342,3 +342,15 @@ const HomePage = (props: Props) => {
 };
 
 export default HomePage;
+function resizeCanvas(canvasRef: React.RefObject<HTMLCanvasElement>, webcamRef: React.RefObject<Webcam>) {
+  const canvas = canvasRef.current;
+  const video = webcamRef.current?.video;
+
+  if((canvas && video)) {
+    const {videoWidth, videoHeight } = video;
+    canvas.width = videoWidth;
+    canvas.height = videoHeight;
+
+  }
+}
+
