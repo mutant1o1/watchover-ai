@@ -14,7 +14,7 @@ pnpm dev
 bun dev
 ```
 
-Open [➡️](https://object-detection-ai-jet.vercel.app/) with your browser to see the result.
+Press on red dot [🔴](https://object-detection-ai-jet.vercel.app/) to see the result on your browser.
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
